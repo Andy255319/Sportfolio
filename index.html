@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>나를 소개하는 한 페이지 - 네트워크 엔지니어 포트폴리오</title>
-    <script src="https://unpkg.com/@simplewebauthn/browser@9.0.1/dist/bundle/index.umd.min.js"></script>
+    <title>네트워크 엔지니어 포트폴리오</title>
+    <!-- 외부 라이브러리 전면 삭제! 순수 자바스크립트만 사용합니다 -->
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Malgun Gothic', sans-serif; background-color: #f8f9fa; color: #333; line-height: 1.5; }
@@ -17,15 +17,10 @@
         h2 { font-size: 18px; border-bottom: 2px solid #0056b3; padding-bottom: 5px; margin-bottom: 10px; color: #1a1a1a; }
         h3 { font-size: 15px; color: #0056b3; margin-top: 10px; margin-bottom: 5px; }
         ul { padding-left: 20px; margin-bottom: 10px; font-size: 13px; }
-        li { margin-bottom: 5px; }
-        p { font-size: 13px; margin-bottom: 8px; }
         table { width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 13px; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
         th { background-color: #f0f4f8; width: 25%; }
         .interactive-btn { background-color: #0056b3; color: #fff; border: none; padding: 10px 15px; font-size: 14px; border-radius: 4px; cursor: pointer; display: block; margin: 10px auto; font-weight: bold; width: 100%; }
-        .hidden-content { display: none; background-color: #eef5fc; border-left: 4px solid #0056b3; padding: 15px; margin-top: 10px; font-size: 13px; }
-        .hidden-content.active { display: block; }
-        
         .private-card { background-color: #fff3f3; border: 2px dashed #dc3545; }
         .private-card h2 { color: #dc3545; border-bottom: 2px solid #dc3545; }
         .passkey-btn { width: auto; display: inline-block; padding: 8px 12px; margin: 5px; }
@@ -41,10 +36,6 @@
                 <div class="card">
                     <h2>1. 페이지 목적 및 공개 범위</h2>
                     <p><strong>타겟:</strong> 미래의 채용 담당자와 부트캠프 동료</p>
-                    <h3>공개하는 정보</h3>
-                    <ul><li>전공 지식 및 자격증</li><li>실무 경험</li></ul>
-                    <h3>비공개 정보</h3>
-                    <ul><li>개인 연락처 및 회고록 등</li></ul>
                 </div>
                 <div class="card">
                     <h2>2. 보유 역량 및 스펙</h2>
@@ -60,32 +51,15 @@
             </div>
 
             <div class="right-column">
-                <div class="card">
-                    <h2>3. 핵심 경험 (상황·행동·결과)</h2>
-                    <h3>경험 1. 원인을 파고드는 꼼꼼함</h3>
-                    <p><strong>결과:</strong> 하위 장비부터 살피는 습관 형성.</p>
-                    <h3>경험 2. 배우는 책임감 (적응력)</h3>
-                    <p><strong>결과:</strong> 낯선 환경에서의 유연한 적응력 확보.</p>
-                </div>
-                
-                <div class="card">
-                    <h2>4. 증거 자료 확인</h2>
-                    <button class="interactive-btn" id="evidenceBtn">경험 증빙 자료 및 깨달음 펼치기 ▼</button>
-                    <div id="evidencePanel" class="hidden-content">
-                        <h3>[증빙] 어학 및 네트워크 역량</h3>
-                        <ul><li>CCNA 200-301 자격증 취득</li><li>OPIc IH 성적표</li></ul>
-                    </div>
-                </div>
-
                 <div class="card private-card">
                     <h2>🔒 나만의 비밀 공간 (비공개 영역)</h2>
+                    
                     <div id="locked-view">
-                        <p style="font-size:13px; color:#666;">소유자의 '패스키'로만 열리는 비공개 구역입니다.</p>
+                        <p style="font-size:13px; color:#666; text-align:center;">소유자의 '패스키'로만 열리는 비공개 구역입니다.</p>
                         <div style="text-align: center; margin-top: 15px;">
                             <button class="interactive-btn passkey-btn" onclick="loginPasskey()" style="background-color:#28a745;">🔓 패스키 로그인</button>
                             <button class="interactive-btn passkey-btn" onclick="registerPasskey()" style="background-color:#6c757d;">🔑 새 패스키 기기 등록</button>
                         </div>
-                        <p id="auth-msg" style="color:#dc3545; font-size:12px; margin-top:10px; font-weight:bold; text-align:center;"></p>
                     </div>
 
                     <div id="unlocked-view" style="display:none;">
@@ -102,116 +76,103 @@
     </div>
 
     <script>
-        document.getElementById('evidenceBtn').addEventListener('click', function() {
-            const panel = document.getElementById('evidencePanel');
-            panel.classList.toggle('active');
-            this.innerText = panel.classList.contains('active') ? '경험 증빙 자료 닫기 ▲' : '경험 증빙 자료 및 깨달음 펼치기 ▼';
-        });
-
-        const { startRegistration, startAuthentication } = SimpleWebAuthnBrowser;
         let mySessionToken = '';
 
+        // 바이너리 데이터를 텍스트(Base64)로 변환하는 함수
+        function bufferToBase64(buffer) {
+            let binary = '';
+            const bytes = new Uint8Array(buffer);
+            for (let i = 0; i < bytes.byteLength; i++) {
+                binary += String.fromCharCode(bytes[i]);
+            }
+            return window.btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+        }
+
+        // [핵심] 패스키 등록 (순수 브라우저 API 직접 호출)
         async function registerPasskey() {
             try {
-                const name = "가상 기기 " + Math.floor(Math.random() * 1000);
-                const resp1 = await fetch('/api/passkey?action=generate-reg&_t=' + Date.now());
-                let options = await resp1.json();
-                
-                if (options.error) return alert("서버 에러: " + options.error);
+                // 사용자에게 직접 기기 이름을 입력받습니다.
+                const deviceName = prompt("등록할 기기 이름을 입력하세요 (예: 내 노트북):", "가상 기기");
+                if (!deviceName) return; // 취소 누르면 중단
 
-                // 🚨 서버 결함 대비 구조 강제 생성 로직 (객체 누락 완벽 차단)
-                if (typeof options.challenge !== 'string') options.challenge = btoa("safe-challenge-string").replace(/=/g, ''); 
-                if (!options.user) options.user = {};
-                if (typeof options.user.id !== 'string') options.user.id = btoa("safe-user-id").replace(/=/g, '');
-                if (!options.user.name) options.user.name = "admin";
-                if (!options.user.displayName) options.user.displayName = "admin";
-                if (Array.isArray(options.excludeCredentials)) {
-                    options.excludeCredentials = options.excludeCredentials.filter(c => c && typeof c.id === 'string');
-                } else {
-                    options.excludeCredentials = [];
-                }
+                // 브라우저 내장 패스키 생성 창 띄우기
+                const credential = await navigator.credentials.create({
+                    publicKey: {
+                        challenge: window.crypto.getRandomValues(new Uint8Array(32)),
+                        rp: { name: "네트워크 엔지니어 포트폴리오", id: window.location.hostname },
+                        user: {
+                            id: window.crypto.getRandomValues(new Uint8Array(16)),
+                            name: "admin",
+                            displayName: "관리자"
+                        },
+                        pubKeyCredParams: [{ type: "public-key", alg: -7 }], // ES256 (표준 알고리즘)
+                        authenticatorSelection: { authenticatorAttachment: "platform" }, // 내장 지문/PIN 사용
+                        timeout: 60000
+                    }
+                });
 
-                let attResp;
-                try {
-                    attResp = await startRegistration({ optionsJSON: options });
-                } catch(err) {
-                    return alert("기기 거절: " + err.message);
-                }
-
-                const resp2 = await fetch('/api/passkey?action=verify-reg', {
+                // 생성된 고유 ID를 서버에 전송하여 등록
+                const credentialId = bufferToBase64(credential.rawId);
+                const resp = await fetch('/api/passkey?action=register', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ response: attResp, deviceName: name })
+                    body: JSON.stringify({ credentialId: credentialId, deviceName: deviceName })
                 });
-                const result = await resp2.json();
-                
+
+                const result = await resp.json();
                 if(result.success) {
-                    alert("패스키 등록 성공!");
-                    if(mySessionToken) loadPrivateData();
-                } else {
-                    alert("등록 실패: " + result.error);
+                    alert("✅ 패스키가 성공적으로 추가되었습니다!");
                 }
-            } catch (err) { alert("통신 에러: " + err.message); }
+            } catch (err) { 
+                alert("기기 등록 거절됨: " + err.message); 
+            }
         }
 
+        // [핵심] 패스키 로그인 (순수 브라우저 API)
         async function loginPasskey() {
-            const msg = document.getElementById('auth-msg');
             try {
-                msg.textContent = "서버 대기 중...";
-                const resp1 = await fetch('/api/passkey?action=generate-auth&_t=' + Date.now());
-                let options = await resp1.json();
-                
-                if (options.error) return msg.textContent = "오류: " + options.error;
+                // 브라우저 내장 패스키 인증 창 띄우기
+                const assertion = await navigator.credentials.get({
+                    publicKey: {
+                        challenge: window.crypto.getRandomValues(new Uint8Array(32)),
+                        rpId: window.location.hostname,
+                        timeout: 60000
+                    }
+                });
 
-                // 🚨 로그인 구조 강제 생성 로직
-                if (typeof options.challenge !== 'string') options.challenge = btoa("safe-challenge-string").replace(/=/g, ''); 
-                if (Array.isArray(options.allowCredentials)) {
-                    options.allowCredentials = options.allowCredentials.filter(c => c && typeof c.id === 'string');
-                } else {
-                    options.allowCredentials = [];
-                }
-
-                msg.textContent = "서명 대기 중...";
-                let asseResp;
-                try {
-                    asseResp = await startAuthentication({ optionsJSON: options });
-                } catch(err) {
-                    return msg.textContent = "로그인 취소됨.";
-                }
-
-                msg.textContent = "검증 중...";
-                const resp2 = await fetch('/api/passkey?action=verify-auth', {
+                // 선택한 기기의 고유 ID를 서버로 보내서 확인
+                const credentialId = bufferToBase64(assertion.rawId);
+                const resp = await fetch('/api/passkey?action=login', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ response: asseResp })
+                    body: JSON.stringify({ credentialId: credentialId })
                 });
-                const result = await resp2.json();
-                
+
+                const result = await resp.json();
                 if(result.success) {
                     mySessionToken = result.token;
-                    msg.textContent = "";
-                    loadPrivateData();
+                    loadPrivateData(); // 문 열기
                 } else {
-                    msg.textContent = "실패: " + (result.error || "알 수 없는 에러");
+                    alert("로그인 실패: 등록되지 않은 기기입니다.");
                 }
-            } catch (err) { msg.textContent = "통신 오류: " + err.message; }
+            } catch (err) { 
+                alert("인증 취소됨"); 
+            }
         }
 
+        // 비공개 데이터 불러오기
         async function loadPrivateData() {
-            const resp = await fetch('/api/passkey?action=get-private-data', {
+            const resp = await fetch('/api/passkey?action=get-data', {
                 headers: { 'Authorization': 'Bearer ' + mySessionToken }
             });
-            if(resp.status === 403) return alert("접근 거절됨.");
+            if(resp.status !== 200) return alert("접근 거절됨.");
             
             const data = await resp.json();
             document.getElementById('locked-view').style.display = 'none';
             document.getElementById('unlocked-view').style.display = 'block';
 
-            const ul = document.getElementById('private-items');
-            ul.innerHTML = data.privateItems.map(item => `<li><strong>${item.title}:</strong> ${item.content}</li>`).join('');
-
-            const kl = document.getElementById('passkey-list');
-            kl.innerHTML = data.devices.map(dev => `<li style="margin-bottom:5px;">${dev.name} 
+            document.getElementById('private-items').innerHTML = data.privateItems.map(item => `<li><strong>${item.title}:</strong> ${item.content}</li>`).join('');
+            document.getElementById('passkey-list').innerHTML = data.devices.map(dev => `<li style="margin-bottom:5px;">${dev.name} 
                 <button class="interactive-btn passkey-btn" onclick="deleteKey('${dev.id}')" style="background:#dc3545; padding:2px 8px; font-size:11px;">삭제</button></li>`).join('');
         }
 
@@ -222,7 +183,7 @@
         }
 
         async function deleteKey(id) {
-            if(!confirm("삭제하시겠습니까?")) return;
+            if(!confirm("이 기기를 삭제하시겠습니까?")) return;
             await fetch('/api/passkey?action=delete-key', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
