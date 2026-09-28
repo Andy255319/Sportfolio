@@ -12,67 +12,24 @@
             color: #333333;
             line-height: 1.5;
         }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
         h1 { font-size: 24px; color: #0056b3; text-align: center; margin-bottom: 5px; }
         .subtitle { text-align: center; color: #555555; margin-bottom: 20px; font-size: 14px; }
-        
-        .grid-layout {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-
-        @media (max-width: 768px) {
-            .grid-layout { grid-template-columns: 1fr; }
-        }
-
-        .card {
-            background-color: #ffffff;
-            border-radius: 8px;
-            padding: 15px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            height: fit-content;
-            margin-bottom: 20px;
-        }
-
-        h2 {
-            font-size: 18px;
-            border-bottom: 2px solid #0056b3;
-            padding-bottom: 5px;
-            margin-bottom: 10px;
-            color: #1a1a1a;
-        }
+        .grid-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        @media (max-width: 768px) { .grid-layout { grid-template-columns: 1fr; } }
+        .card { background-color: #ffffff; border-radius: 8px; padding: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); height: fit-content; margin-bottom: 20px; }
+        h2 { font-size: 18px; border-bottom: 2px solid #0056b3; padding-bottom: 5px; margin-bottom: 10px; color: #1a1a1a; }
         h3 { font-size: 15px; color: #0056b3; margin-top: 10px; margin-bottom: 5px; }
-        
         ul { padding-left: 20px; margin-bottom: 10px; font-size: 13px; }
         li { margin-bottom: 5px; }
         p { font-size: 13px; margin-bottom: 8px; }
-
         table { width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 13px; }
         th, td { border: 1px solid #dddddd; padding: 8px; text-align: left; }
         th { background-color: #f0f4f8; color: #333; width: 25%; }
-
-        a:focus, button:focus { outline: 3px solid #ff9900; outline-offset: 2px; }
-        .interactive-btn {
-            background-color: #0056b3; color: #ffffff; border: none;
-            padding: 10px 15px; font-size: 14px; border-radius: 4px;
-            cursor: pointer; display: block; margin: 10px auto;
-            font-weight: bold; transition: background-color 0.3s; width: 100%;
-        }
+        .interactive-btn { background-color: #0056b3; color: #ffffff; border: none; padding: 10px 15px; font-size: 14px; border-radius: 4px; cursor: pointer; display: block; margin: 10px auto; font-weight: bold; width: 100%; }
         .interactive-btn:hover { background-color: #004494; }
-        
-        .hidden-content {
-            display: none; background-color: #eef5fc; border-left: 4px solid #0056b3;
-            padding: 15px; border-radius: 0 4px 4px 0; margin-top: 10px; font-size: 13px;
-        }
+        .hidden-content { display: none; background-color: #eef5fc; border-left: 4px solid #0056b3; padding: 15px; border-radius: 0 4px 4px 0; margin-top: 10px; font-size: 13px; }
         .hidden-content.active { display: block; }
-
         .private-card { background-color: #fff3f3; border: 2px dashed #dc3545; }
         .private-card h2 { color: #dc3545; border-bottom: 2px solid #dc3545; }
         .passkey-btn { width: auto; display: inline-block; padding: 8px 12px; margin: 5px; }
@@ -84,8 +41,6 @@
         <p class="subtitle">저는 어떤 환경에서도 기어코 방법을 찾아냅니다.</p>
 
         <div class="grid-layout">
-            
-            <!-- 왼쪽 단 -->
             <div class="left-column">
                 <div class="card">
                     <h2>1. 페이지 목적 및 공개 범위</h2>
@@ -107,57 +62,34 @@
                     <h2>2. 보유 역량 및 스펙</h2>
                     <table>
                         <tbody>
-                            <tr>
-                                <th>학력/학점</th>
-                                <td>OO대학교 정보통신공학과 / 학점 4.02</td>
-                            </tr>
-                            <tr>
-                                <th>자격증</th>
-                                <td>통신선로기능사, 네트워크관리사 2급, CCNA</td>
-                            </tr>
-                            <tr>
-                                <th>어학</th>
-                                <td>TOEIC 785, OPIc IH</td>
-                            </tr>
-                            <tr>
-                                <th>주요 경험</th>
-                                <td>
-                                    <ul>
-                                        <li>육군 통신 하사 (총 2년) / 수송부 파견</li>
-                                        <li>터키 교환학생 (1학기)</li>
-                                    </ul>
-                                </td>
-                            </tr>
-                            <tr>
-                                <th>현재 상태</th>
-                                <td>SKT Aleph 부트캠프 이수 중</td>
-                            </tr>
+                            <tr><th>학력/학점</th><td>OO대학교 정보통신공학과 / 학점 4.02</td></tr>
+                            <tr><th>자격증</th><td>통신선로기능사, 네트워크관리사 2급, CCNA</td></tr>
+                            <tr><th>어학</th><td>TOEIC 785, OPIc IH</td></tr>
+                            <tr><th>주요 경험</th><td>육군 통신 하사 (총 2년) / 터키 교환학생</td></tr>
+                            <tr><th>현재 상태</th><td>SKT Aleph 부트캠프 이수 중</td></tr>
                         </tbody>
                     </table>
                 </div>
             </div>
 
-            <!-- 오른쪽 단 -->
             <div class="right-column">
                 <div class="card">
                     <h2>3. 핵심 경험 (상황·행동·결과)</h2>
                     <h3>경험 1. 원인을 파고드는 꼼꼼함</h3>
                     <p><strong>상황:</strong> 수송부 PC 인트라넷 통신 불가 문제 발생.</p>
-                    <p><strong>행동:</strong> 전화기(VoIP) 상태 점검 후 LAN선 단선 파악 및 조치.</p>
+                    <p><strong>행동:</strong> 전화기 상태 점검 후 LAN선 단선 파악 및 조치.</p>
                     <p><strong>결과:</strong> 통신 복구 완료. 하위 장비부터 살피는 습관 형성.</p>
 
                     <h3>경험 2. 배우는 책임감 (적응력)</h3>
                     <p><strong>상황:</strong> 수송부 파견으로 낯선 차량 정비 임무 부여.</p>
-                    <p><strong>행동:</strong> 병사들에게 장비 사용법을 솔직하게 묻고 배움.</p>
-                    <p><strong>결과:</strong> 정비 완수 및 낯선 환경에서의 유연한 적응력 확보.</p>
+                    <p><strong>행동:</strong> 병사들에게 장비 사용법을 묻고 배움.</p>
+                    <p><strong>결과:</strong> 정비 완수 및 유연한 적응력 확보.</p>
                 </div>
                 
                 <div class="card">
                     <h2>4. 증거 자료 확인</h2>
-                    <button class="interactive-btn" id="evidenceBtn" aria-expanded="false" aria-controls="evidencePanel">
-                        경험 증빙 자료 및 깨달음 펼치기 ▼
-                    </button>
-                    <div id="evidencePanel" class="hidden-content" role="region">
+                    <button class="interactive-btn" id="evidenceBtn">경험 증빙 자료 및 깨달음 펼치기 ▼</button>
+                    <div id="evidencePanel" class="hidden-content">
                         <h3>[증빙] 어학 및 네트워크 역량</h3>
                         <ul>
                             <li>CCNA 200-301 자격증 취득</li>
@@ -166,25 +98,15 @@
                     </div>
                 </div>
 
-                <!-- 🔒 비공개 영역 (패스키 + ID/PW 통합 인증) -->
+                <!-- 🔒 순수 패스키 비공개 영역 -->
                 <div class="card private-card">
                     <h2>🔒 나만의 비밀 공간 (비공개 영역)</h2>
                     
                     <div id="locked-view">
-                        <p style="font-size:13px; color:#666; text-align:center;">패스키 또는 아이디/비밀번호로 접속할 수 있습니다.</p>
-                        
-                        <!-- 패스키 인증 구역 -->
-                        <div style="text-align: center; margin-top: 15px; border-bottom: 1px solid #ffcccc; padding-bottom: 10px;">
-                            <p style="font-size: 12px; font-weight: bold; color: #333;">패스키(USB/가상 인증)</p>
+                        <p style="font-size:13px; color:#666; text-align:center;">비밀번호가 없으며, 등록된 패스키(열쇠)로만 입장이 가능합니다.</p>
+                        <div style="text-align: center; margin-top: 15px;">
                             <button class="interactive-btn passkey-btn" onclick="loginPasskey()" style="background-color:#28a745;">🔓 패스키 로그인</button>
                             <button class="interactive-btn passkey-btn" onclick="registerPasskey()" style="background-color:#6c757d;">🔑 새 패스키 기기 등록</button>
-                        </div>
-
-                        <!-- ID/PW 인증 구역 -->
-                        <div style="text-align: center; margin-top: 15px;">
-                            <p style="font-size: 12px; font-weight: bold; color: #333;">아이디 / 비밀번호 인증</p>
-                            <button class="interactive-btn passkey-btn" onclick="loginPassword()" style="background-color:#0056b3;">👤 ID/PW 로그인</button>
-                            <button class="interactive-btn passkey-btn" onclick="registerPassword()" style="background-color:#ffc107; color:#333;">✍️ ID/PW 회원가입</button>
                         </div>
                     </div>
 
@@ -194,25 +116,19 @@
                         <ul id="private-items"></ul>
                         
                         <hr style="margin:15px 0; border:1px solid #ffcccc;">
-                        <h3 style="color:#dc3545;">등록된 계정 및 패스키 관리</h3>
-                        <p style="font-size: 12px; font-weight: bold;">등록된 계정:</p>
-                        <ul id="account-list"></ul>
-                        <p style="font-size: 12px; font-weight: bold; margin-top: 5px;">등록된 패스키:</p>
+                        <h3 style="color:#dc3545;">등록된 패스키(열쇠) 관리</h3>
                         <ul id="passkey-list"></ul>
                     </div>
                 </div>
             </div>
-
         </div>
     </div>
 
     <script>
-        // 증빙 자료 토글
-        const btn = document.getElementById('evidenceBtn');
-        const panel = document.getElementById('evidencePanel');
-        btn.addEventListener('click', () => {
+        document.getElementById('evidenceBtn').addEventListener('click', function() {
+            const panel = document.getElementById('evidencePanel');
             const isActive = panel.classList.toggle('active');
-            btn.innerText = isActive ? '경험 증빙 자료 닫기 ▲' : '경험 증빙 자료 및 깨달음 펼치기 ▼';
+            this.innerText = isActive ? '경험 증빙 자료 닫기 ▲' : '경험 증빙 자료 및 깨달음 펼치기 ▼';
         });
 
         let mySessionToken = '';
@@ -237,7 +153,6 @@
             return bytes.buffer;
         }
 
-        // 1. 패스키 등록
         async function registerPasskey() {
             try {
                 const deviceName = prompt("등록할 기기 이름을 입력하세요:", "내 기기 " + Math.floor(Math.random()*100));
@@ -279,7 +194,6 @@
             }
         }
 
-        // 2. 패스키 로그인
         async function loginPasskey() {
             try {
                 const resp1 = await fetch('/api/passkey?action=generate-auth&_t=' + Date.now());
@@ -320,50 +234,6 @@
             }
         }
 
-        // 3. ID/PW 회원가입
-        async function registerPassword() {
-            const username = prompt("사용할 아이디를 입력하세요:");
-            if (!username) return;
-            const password = prompt("사용할 비밀번호를 입력하세요:");
-            if (!password) return;
-
-            const resp = await fetch('/api/passkey?action=register-pw', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ username, password })
-            });
-
-            const result = await resp.json();
-            if (result.success) {
-                alert("✅ 회원가입 완료! ID/PW 로그인 버튼을 눌러주세요.");
-            } else {
-                alert("가입 실패: " + result.error);
-            }
-        }
-
-        // 4. ID/PW 로그인
-        async function loginPassword() {
-            const username = prompt("아이디를 입력하세요:");
-            if (!username) return;
-            const password = prompt("비밀번호를 입력하세요:");
-            if (!password) return;
-
-            const resp = await fetch('/api/passkey?action=login-pw', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ username, password })
-            });
-
-            const result = await resp.json();
-            if (result.success) {
-                mySessionToken = result.token;
-                loadPrivateData();
-            } else {
-                alert("로그인 실패: " + result.error);
-            }
-        }
-
-        // 5. 비공개 데이터 로드
         async function loadPrivateData() {
             const resp = await fetch('/api/passkey?action=get-data', {
                 headers: { 'Authorization': 'Bearer ' + mySessionToken }
@@ -375,18 +245,15 @@
             document.getElementById('unlocked-view').style.display = 'block';
 
             document.getElementById('private-items').innerHTML = data.privateItems.map(item => `<li><strong>${item.title}:</strong> ${item.content}</li>`).join('');
-            document.getElementById('account-list').innerHTML = data.accounts.length > 0 ? data.accounts.map(acc => `<li>아이디: ${acc.username}</li>`).join('') : '<li>등록된 계정 없음</li>';
             document.getElementById('passkey-list').innerHTML = data.devices.length > 0 ? data.devices.map(dev => `<li style="margin-bottom:5px;">${dev.name} <button class="interactive-btn passkey-btn" onclick="deleteKey('${dev.id}')" style="background:#dc3545; padding:2px 8px; font-size:11px;">삭제</button></li>`).join('') : '<li>등록된 패스키 없음</li>';
         }
 
-        // 6. 로그아웃
         function logoutSession() {
             mySessionToken = '';
             document.getElementById('locked-view').style.display = 'block';
             document.getElementById('unlocked-view').style.display = 'none';
         }
 
-        // 7. 패스키 삭제
         async function deleteKey(credentialID) {
             if (!confirm("이 기기를 삭제하시겠습니까?")) return;
             await fetch('/api/passkey?action=delete-key', {
