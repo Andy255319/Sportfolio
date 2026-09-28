@@ -5,7 +5,8 @@ import {
     verifyAuthenticationResponse
 } from '@simplewebauthn/server';
 
-let globalDevices = []; 
+// ★ 핵심: 변수명을 V2로 변경하여 Vercel 메모리에 남은 고장 난 캐시를 강제로 파기합니다.
+let globalDevicesV2 = []; 
 let sessionToken = null;
 
 function parseCookies(cookieHeader) {
@@ -31,14 +32,34 @@ export default async function handler(req, res) {
 
     try {
         if (action === 'generate-reg') {
-            const options = await generateRegistrationOptions({
-                rpName, rpID,
-                userID: new Uint8Array(Buffer.from('admin-user')),
-                userName: 'admin',
-                attestationType: 'none',
-                authenticatorSelection: { authenticatorAttachment: 'platform' },
-                excludeCredentials: globalDevices.map(dev => ({ id: dev.credentialID, type: 'public-key' })),
-            });
+            let options;
+            const excludeList = globalDevicesV2.map(dev => ({ id: dev.credentialID, type: 'public-key' })).filter(c => c.id);
+            
+            try { // v10 최신 버전 시도
+                options = await generateRegistrationOptions({
+                    rpName, rpID,
+                    userID: new Uint8Array(Buffer.from('admin-user')),
+                    userName: 'admin',
+                    attestationType: 'none',
+                    authenticatorSelection: { authenticatorAttachment: 'platform' },
+                    excludeCredentials: excludeList,
+                });
+            } catch (err) { // v9 구버전 시도
+                options = await generateRegistrationOptions({
+                    rpName, rpID,
+                    userID: 'admin-user',
+                    userName: 'admin',
+                    attestationType: 'none',
+                    authenticatorSelection: { authenticatorAttachment: 'platform' },
+                    excludeCredentials: excludeList,
+                });
+            }
+            
+            // 브라우저 에러(reading 'replace') 방지를 위한 강제 문자열 보정
+            if (options.user && typeof options.user.id !== 'string') {
+                options.user.id = Buffer.from('admin-user').toString('base64url').replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+            }
+            
             res.setHeader('Set-Cookie', `challenge=${options.challenge}; Path=/; HttpOnly; SameSite=Lax; Max-Age=300`);
             return res.status(200).json(options);
         }
@@ -57,20 +78,19 @@ export default async function handler(req, res) {
 
             if (verification.verified && verification.registrationInfo) {
                 const regInfo = verification.registrationInfo;
-                
-                // ★ 핵심: Vercel 라이브러리 버전(v9 vs v10) 불일치로 인한 undefined 에러 완벽 방어
                 let credID, pubKey, ctr;
-                if (regInfo.credential) { // v10 최신 버전일 때
+                
+                if (regInfo.credential) { // v10
                     credID = regInfo.credential.id;
                     pubKey = regInfo.credential.publicKey;
                     ctr = regInfo.credential.counter;
-                } else { // v9 구버전이 섞여 들어왔을 때
-                    credID = String(regInfo.credentialID);
+                } else { // v9
+                    credID = Buffer.from(regInfo.credentialID).toString('base64url').replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
                     pubKey = regInfo.credentialPublicKey;
                     ctr = regInfo.counter;
                 }
 
-                globalDevices.push({
+                globalDevicesV2.push({
                     credentialID: credID,
                     publicKey: pubKey, 
                     counter: ctr,
@@ -86,7 +106,7 @@ export default async function handler(req, res) {
         if (action === 'generate-auth') {
             const options = await generateAuthenticationOptions({
                 rpID,
-                allowCredentials: globalDevices.map(dev => ({ id: dev.credentialID, type: 'public-key' })),
+                allowCredentials: globalDevicesV2.map(dev => ({ id: dev.credentialID, type: 'public-key' })).filter(c => c.id),
             });
             res.setHeader('Set-Cookie', `challenge=${options.challenge}; Path=/; HttpOnly; SameSite=Lax; Max-Age=300`);
             return res.status(200).json(options);
@@ -97,21 +117,25 @@ export default async function handler(req, res) {
             const expectedChallenge = cookies.challenge;
             if (!expectedChallenge) return res.status(400).json({ error: '만료되거나 이미 사용된 질문입니다.' });
 
-            const device = globalDevices.find(d => d.credentialID === response.id);
+            const device = globalDevicesV2.find(d => d.credentialID === response.id);
             if (!device) return res.status(400).json({ error: '등록되지 않은 기기입니다.' });
 
-            let verification = await verifyAuthenticationResponse({
-                response,
-                expectedChallenge,
-                expectedOrigin,
-                expectedRPID: rpID,
-                // 버전 호환성 양방향 방어
-                authenticator: { credentialID: device.credentialID, credentialPublicKey: device.publicKey, counter: device.counter },
-                credential: { id: device.credentialID, publicKey: device.publicKey, counter: device.counter }
-            });
+            let verification;
+            try { // v10
+                verification = await verifyAuthenticationResponse({
+                    response, expectedChallenge, expectedOrigin, expectedRPID: rpID,
+                    credential: { id: device.credentialID, publicKey: device.publicKey, counter: device.counter }
+                });
+            } catch(err) { // v9
+                const toBuffer = (b64u) => Buffer.from(b64u.replace(/-/g, '+').replace(/_/g, '/'), 'base64');
+                verification = await verifyAuthenticationResponse({
+                    response, expectedChallenge, expectedOrigin, expectedRPID: rpID,
+                    authenticator: { credentialID: toBuffer(device.credentialID), credentialPublicKey: device.publicKey, counter: device.counter }
+                });
+            }
 
             if (verification.verified) {
-                device.counter = verification.authenticationInfo.newCounter;
+                device.counter = verification.authenticationInfo ? verification.authenticationInfo.newCounter : 0;
                 sessionToken = 'secure-session-' + Date.now();
                 res.setHeader('Set-Cookie', `challenge=; Path=/; HttpOnly; Max-Age=0`);
                 return res.status(200).json({ success: true, token: sessionToken });
@@ -126,17 +150,17 @@ export default async function handler(req, res) {
             }
             return res.status(200).json({
                 privateItems: [
-                    { title: '준비 중인 프로젝트 메모', content: 'WebAuthn API를 활용한 B2B SaaS 기업용 비밀번호 없는 사내망 인증 시스템 설계 기획안.' },
+                    { title: '준비 중인 프로젝트 메모', content: 'WebAuthn API를 활용한 기업용 비밀번호 없는 사내망 인증 시스템 기획안.' },
                     { title: '지원하려는 곳 목록', content: '통신 3사 핵심 인프라 기획 직무, 클라우드 아키텍트 직무.' },
-                    { title: '스스로 쓰는 회고', content: '보안과 편의성은 반비례한다는 편견을 패스키 기술을 구현하며 깨부수었다.' }
+                    { title: '스스로 쓰는 회고', content: '보안과 편의성은 반비례한다는 편견을 패스키(Passkey) 기술을 구현하며 깨부수었다.' }
                 ],
-                devices: globalDevices.map(d => ({ id: d.credentialID, name: d.name, date: d.registeredAt }))
+                devices: globalDevicesV2.map(d => ({ id: d.credentialID, name: d.name, date: d.registeredAt }))
             });
         }
 
         if (action === 'delete-key') {
             const { credentialID } = req.body;
-            globalDevices = globalDevices.filter(d => d.credentialID !== credentialID);
+            globalDevicesV2 = globalDevicesV2.filter(d => d.credentialID !== credentialID);
             return res.status(200).json({ success: true });
         }
 
