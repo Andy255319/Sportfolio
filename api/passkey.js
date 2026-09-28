@@ -9,7 +9,7 @@ import {
 let globalUser = {
     id: 'admin-portfolio-user',
     username: 'admin',
-    devices: [], // 여기에 기기의 '공개키'만 저장됨 (개인키는 기기 내부에 잔류)
+    devices: [], 
     currentChallenge: null
 };
 let sessionToken = null;
@@ -28,9 +28,13 @@ export default async function handler(req, res) {
                 userID: new Uint8Array(Buffer.from(globalUser.id)),
                 userName: globalUser.username,
                 attestationType: 'none',
+                // ★ 윈도우 보안 키(USB) 팝업 방지: 기기 자체 기능(PIN, 지문, FaceID)만 사용하도록 강제
+                authenticatorSelection: {
+                    authenticatorAttachment: 'platform'
+                },
                 excludeCredentials: globalUser.devices.map(dev => ({ id: dev.credentialID, type: 'public-key' })),
             });
-            globalUser.currentChallenge = options.challenge; // 서버가 챌린지를 기억함 (T08-C19)
+            globalUser.currentChallenge = options.challenge; 
             return res.status(200).json(options);
         }
 
@@ -50,12 +54,12 @@ export default async function handler(req, res) {
                 const { credential } = verification.registrationInfo;
                 globalUser.devices.push({
                     credentialID: credential.id,
-                    publicKey: credential.publicKey, // 서버에는 오직 '공개키'만 저장됨 (T08-C21)
+                    publicKey: credential.publicKey, 
                     counter: credential.counter,
                     name: deviceName || `기기 ${globalUser.devices.length + 1}`,
                     registeredAt: new Date().toISOString()
                 });
-                globalUser.currentChallenge = null; // 챌린지 폐기 (재사용 방지)
+                globalUser.currentChallenge = null; 
                 return res.status(200).json({ success: true });
             }
             return res.status(400).json({ error: '서명 검증 실패' });
@@ -71,10 +75,9 @@ export default async function handler(req, res) {
             return res.status(200).json(options);
         }
 
-        // 4. 로그인 서명 검증 (T08-C31 재사용 공격 방어 포함)
+        // 4. 로그인 서명 검증 
         if (action === 'verify-auth') {
             const { response } = req.body;
-            // 이미 쓴 챌린지로 다시 요청하면 여기서 에러 반환 (T08-C31 막히는 지점 방어)
             if (!globalUser.currentChallenge) return res.status(400).json({ error: '만료되었거나 이미 사용된 질문(Challenge)입니다.' });
 
             const device = globalUser.devices.find(d => d.credentialID === response.id);
@@ -90,20 +93,19 @@ export default async function handler(req, res) {
 
             if (verification.verified) {
                 device.counter = verification.authenticationInfo.newCounter;
-                globalUser.currentChallenge = null; // ★ 핵심: 서명 성공 즉시 챌린지 소진 (재사용 원천 차단)
+                globalUser.currentChallenge = null; 
                 sessionToken = 'secure-session-' + Date.now();
                 return res.status(200).json({ success: true, token: sessionToken });
             }
             return res.status(400).json({ error: '로그인 검증 실패' });
         }
 
-        // 5. 비공개 데이터 요청 (토큰 검증) - T08-C16, C17 방어
+        // 5. 비공개 데이터 요청 (토큰 검증)
         if (action === 'get-private-data') {
             const token = req.headers.authorization?.split('Bearer ')[1];
             if (!token || token !== sessionToken) {
                 return res.status(403).json({ error: '403 Forbidden: 패스키 인증이 필요합니다.' });
             }
-            // 인증 성공 시에만 비공개 자료 반환 (HTML 소스코드에는 절대 남지 않음)
             return res.status(200).json({
                 privateItems: [
                     { title: '준비 중인 프로젝트 메모', content: 'WebAuthn API를 활용한 B2B SaaS 기업용 비밀번호 없는 사내망 인증 시스템 설계 기획안.' },
