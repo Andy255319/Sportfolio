@@ -1,0 +1,8 @@
+{
+  "name": "portfolio-passkey",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "@simplewebauthn/server": "^10.0.0"
+  }
+}
