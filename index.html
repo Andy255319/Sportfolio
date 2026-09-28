@@ -120,22 +120,22 @@
 
         async function registerPasskey() {
             try {
-                // [수정됨] 크롬 보안 차단 방지를 위해 prompt 제거하고 이름을 자동 생성
-                const name = "인증 기기 " + Math.floor(Math.random() * 1000);
-
-                const resp1 = await fetch('/api/passkey?action=generate-reg');
+                const name = "가상 기기 " + Math.floor(Math.random() * 1000);
+                
+                // ★ 주소 뒤에 난수를 붙여 캐시를 강제 파괴 (Cache Busting)
+                const resp1 = await fetch('/api/passkey?action=generate-reg&_t=' + Date.now());
                 const options = await resp1.json();
                 
-                if (options.error) {
-                    return alert("서버 에러: " + options.error);
+                // Vercel이 또 엉뚱한 데이터를 주면 브라우저가 뻗기 전에 경고창으로 띄움
+                if (options.error || !options.challenge) {
+                    return alert("서버 응답 오류 (캐시 문제): " + JSON.stringify(options));
                 }
 
                 let attResp;
                 try {
                     attResp = await startRegistration({ optionsJSON: options });
                 } catch(err) {
-                    // [수정됨] 뭉뚱그린 에러 대신 정확한 에러 사유를 출력
-                    return alert("패스키 실행 에러: " + err.message);
+                    return alert("패스키 실행 거절됨: " + err.message);
                 }
 
                 const resp2 = await fetch('/api/passkey?action=verify-reg', {
@@ -146,8 +146,7 @@
                 const result = await resp2.json();
                 
                 if(result.success) {
-                    alert("패스키가 안전하게 등록되었습니다! 이제 로그인을 테스트해 보세요.");
-                    if(mySessionToken) loadPrivateData(); 
+                    alert("패스키가 안전하게 등록되었습니다!");
                 } else {
                     alert("등록 실패: " + result.error);
                 }
@@ -158,10 +157,13 @@
             const msg = document.getElementById('auth-msg');
             try {
                 msg.textContent = "서버에서 질문을 가져오는 중...";
-                const resp1 = await fetch('/api/passkey?action=generate-auth');
+                // ★ 캐시 강제 파괴
+                const resp1 = await fetch('/api/passkey?action=generate-auth&_t=' + Date.now());
                 const options = await resp1.json();
                 
-                if (options.error) return msg.textContent = "서버 에러: " + options.error;
+                if (options.error || !options.challenge) {
+                    return msg.textContent = "서버 응답 오류: " + JSON.stringify(options);
+                }
 
                 msg.textContent = "패스키 서명을 기다리는 중...";
                 let asseResp;
@@ -188,7 +190,6 @@
                 }
             } catch (err) { msg.textContent = "오류 발생: " + err.message; }
         }
-
         async function loadPrivateData() {
             const resp = await fetch('/api/passkey?action=get-private-data', {
                 headers: { 'Authorization': 'Bearer ' + mySessionToken }
