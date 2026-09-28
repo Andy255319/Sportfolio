@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>나를 소개하는 한 페이지 - 네트워크 엔지니어 포트폴리오</title>
-    <!-- 패스키 구동을 위한 브라우저용 라이브러리 로드 -->
+    <!-- [수정됨] 패스키 버전 충돌 방지를 위해 v10으로 명시적 고정 -->
     <script src="https://unpkg.com/@simplewebauthn/browser@10.0.0/dist/bundle/index.umd.min.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -27,7 +27,7 @@
         .hidden-content { display: none; background-color: #eef5fc; border-left: 4px solid #0056b3; padding: 15px; margin-top: 10px; font-size: 13px; }
         .hidden-content.active { display: block; }
         
-        /* 비공개 영역 전용 스타일 (T08-C13 구분) */
+        /* 비공개 영역 전용 스타일 */
         .private-card { background-color: #fff3f3; border: 2px dashed #dc3545; }
         .private-card h2 { color: #dc3545; border-bottom: 2px solid #dc3545; }
         .passkey-btn { width: auto; display: inline-block; padding: 8px 12px; margin: 5px; }
@@ -35,11 +35,10 @@
 </head>
 <body>
     <div class="container">
-        <h1>이론과 야전을 모두 겪은 네트워크 엔지니어 김민승 입니다</h1>
+        <h1>이론과 야전을 모두 겪은 네트워크 엔지니어 김OO 입니다</h1>
         <p class="subtitle">저는 어떤 환경에서도 기어코 방법을 찾아냅니다.</p>
 
         <div class="grid-layout">
-            <!-- 왼쪽 단 -->
             <div class="left-column">
                 <div class="card">
                     <h2>1. 페이지 목적 및 공개 범위</h2>
@@ -53,7 +52,7 @@
                     <h2>2. 보유 역량 및 스펙</h2>
                     <table>
                         <tbody>
-                            <tr><th>학력/학점</th><td>경성대학교 정보통신공학과 / 학점 4.02</td></tr>
+                            <tr><th>학력/학점</th><td>OO대학교 정보통신공학과 / 학점 4.02</td></tr>
                             <tr><th>자격증</th><td>통신선로기능사, 네트워크관리사 2급, CCNA</td></tr>
                             <tr><th>어학</th><td>TOEIC 785, OPIc IH</td></tr>
                             <tr><th>주요 경험</th><td>육군 통신 하사 (2년), 터키 교환학생</td></tr>
@@ -62,7 +61,6 @@
                 </div>
             </div>
 
-            <!-- 오른쪽 단 -->
             <div class="right-column">
                 <div class="card">
                     <h2>3. 핵심 경험 (상황·행동·결과)</h2>
@@ -81,13 +79,12 @@
                     </div>
                 </div>
 
-                <!-- [과제 8] 패스키 비공개 영역 (T08-C13) -->
+                <!-- [과제 8] 패스키 비공개 영역 -->
                 <div class="card private-card">
                     <h2>🔒 나만의 비밀 공간 (비공개 영역)</h2>
                     
-                    <!-- 로그인 전 (잠김 화면) -->
                     <div id="locked-view">
-                        <p style="font-size:13px; color:#666;">이곳은 소유자의 '패스키(지문/Face ID)'로만 열리는 비공개 구역입니다. 비밀번호는 존재하지 않습니다.</p>
+                        <p style="font-size:13px; color:#666;">이곳은 소유자의 '패스키(지문/Face ID)'로만 열리는 비공개 구역입니다.</p>
                         <div style="text-align: center; margin-top: 15px;">
                             <button class="interactive-btn passkey-btn" onclick="loginPasskey()" style="background-color:#28a745;">🔓 패스키 로그인</button>
                             <button class="interactive-btn passkey-btn" onclick="registerPasskey()" style="background-color:#6c757d;">🔑 새 패스키 기기 등록</button>
@@ -95,11 +92,10 @@
                         <p id="auth-msg" style="color:#dc3545; font-size:12px; margin-top:10px; font-weight:bold; text-align:center;"></p>
                     </div>
 
-                    <!-- 로그인 후 (열림 화면, 소스코드엔 데이터가 없음 T08-C18) -->
                     <div id="unlocked-view" style="display:none;">
                         <button class="interactive-btn passkey-btn" onclick="logoutPasskey()" style="background-color:#dc3545; float:right;">로그아웃</button>
                         <h3 style="color:#dc3545;">나만의 비공개 자료</h3>
-                        <ul id="private-items"></ul> <!-- 자바스크립트로 주입됨 -->
+                        <ul id="private-items"></ul>
                         
                         <hr style="margin:15px 0; border:1px solid #ffcccc;">
                         <h3 style="color:#dc3545;">등록된 열쇠(패스키) 관리</h3>
@@ -111,7 +107,6 @@
     </div>
 
     <script>
-        // 기존 4번 카드 버튼 동작
         const btn = document.getElementById('evidenceBtn');
         const panel = document.getElementById('evidencePanel');
         btn.addEventListener('click', () => {
@@ -125,25 +120,24 @@
 
         async function registerPasskey() {
             try {
-                const name = prompt("이 기기의 패스키 이름을 정해주세요 (예: 내 아이폰, 집 컴퓨터):", "내 노트북");
-                if(!name) {
-                    alert("등록이 취소되었습니다. (T08-C25)");
-                    return;
-                }
+                // [수정됨] 크롬 보안 차단 방지를 위해 prompt 제거하고 이름을 자동 생성
+                const name = "인증 기기 " + Math.floor(Math.random() * 1000);
 
-                // 1. 서버가 만든 일회용 질문(Challenge) 가져오기
                 const resp1 = await fetch('/api/passkey?action=generate-reg');
                 const options = await resp1.json();
+                
+                if (options.error) {
+                    return alert("서버 에러: " + options.error);
+                }
 
-                // 2. 브라우저/OS 패스키 UI 띄우기 (개인키 생성 및 공개키 추출)
                 let attResp;
                 try {
                     attResp = await startRegistration({ optionsJSON: options });
                 } catch(err) {
-                    return alert("기기에서 패스키 등록을 거부/취소했습니다.");
+                    // [수정됨] 뭉뚱그린 에러 대신 정확한 에러 사유를 출력
+                    return alert("패스키 실행 에러: " + err.message);
                 }
 
-                // 3. 서명 결과를 서버로 전송하여 검증 및 공개키 저장
                 const resp2 = await fetch('/api/passkey?action=verify-reg', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
@@ -151,24 +145,30 @@
                 });
                 const result = await resp2.json();
                 
-                if(result.success) alert("패스키가 안전하게 등록되었습니다! 이제 로그인해보세요.");
-                else alert("등록 실패: " + result.error);
-            } catch (err) { console.error(err); }
+                if(result.success) {
+                    alert("패스키가 안전하게 등록되었습니다! 이제 로그인을 테스트해 보세요.");
+                    if(mySessionToken) loadPrivateData(); 
+                } else {
+                    alert("등록 실패: " + result.error);
+                }
+            } catch (err) { alert("네트워크 에러: " + err.message); }
         }
 
         async function loginPasskey() {
             const msg = document.getElementById('auth-msg');
             try {
-                msg.textContent = "서버에서 암호학적 질문(Challenge)을 가져오는 중...";
+                msg.textContent = "서버에서 질문을 가져오는 중...";
                 const resp1 = await fetch('/api/passkey?action=generate-auth');
                 const options = await resp1.json();
+                
+                if (options.error) return msg.textContent = "서버 에러: " + options.error;
 
-                msg.textContent = "기기에서 지문/Face ID 등 패스키 서명을 기다리는 중...";
+                msg.textContent = "패스키 서명을 기다리는 중...";
                 let asseResp;
                 try {
                     asseResp = await startAuthentication({ optionsJSON: options });
                 } catch(err) {
-                    return msg.textContent = "인증이 취소되었습니다.";
+                    return msg.textContent = "로그인 에러: " + err.message;
                 }
 
                 msg.textContent = "서명 확인 중...";
@@ -184,35 +184,31 @@
                     msg.textContent = "";
                     loadPrivateData();
                 } else {
-                    msg.textContent = "거절됨 (401/403): " + (result.error || "알 수 없는 에러");
+                    msg.textContent = "거절됨: " + (result.error || "알 수 없는 에러");
                 }
             } catch (err) { msg.textContent = "오류 발생: " + err.message; }
         }
 
         async function loadPrivateData() {
-            // 패스키 없이 비공개 URL을 직접 찔러보는 행위(T08-C16) 방어
             const resp = await fetch('/api/passkey?action=get-private-data', {
                 headers: { 'Authorization': 'Bearer ' + mySessionToken }
             });
             
             if(resp.status === 403) {
-                alert("비공개 자료 접근이 거절되었습니다 (403 Forbidden). 패스키 로그인이 필요합니다.");
+                alert("비공개 자료 접근이 거절되었습니다. 패스키 로그인이 필요합니다.");
                 return;
             }
             const data = await resp.json();
             
-            // 화면 전환
             document.getElementById('locked-view').style.display = 'none';
             document.getElementById('unlocked-view').style.display = 'block';
 
-            // 비공개 항목(3개 이상 - T08-C14) 렌더링
             const ul = document.getElementById('private-items');
             ul.innerHTML = '';
             data.privateItems.forEach(item => {
                 ul.innerHTML += `<li><strong>${item.title}:</strong> ${item.content}</li>`;
             });
 
-            // 등록된 기기 2개 이상 표시(T08-C43) 및 삭제 렌더링
             const kl = document.getElementById('passkey-list');
             kl.innerHTML = '';
             data.devices.forEach(dev => {
@@ -228,13 +224,13 @@
         }
 
         async function deleteKey(id) {
-            if(!confirm("이 패스키 기기를 삭제하시겠습니까? (다른 패스키가 남아있다면 들어올 수 있습니다)")) return;
+            if(!confirm("이 패스키 기기를 삭제하시겠습니까?")) return;
             await fetch('/api/passkey?action=delete-key', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ credentialID: id })
             });
-            loadPrivateData(); // 목록 새로고침
+            loadPrivateData();
         }
     </script>
 </body>
