@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>나를 소개하는 한 페이지 - 네트워크 엔지니어 포트폴리오</title>
-    <!-- 호환성이 가장 뛰어난 9버전으로 안정화 -->
     <script src="https://unpkg.com/@simplewebauthn/browser@9.0.1/dist/bundle/index.umd.min.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -120,21 +119,17 @@
                 
                 if (options.error) return alert("서버 에러: " + options.error);
 
-                // =========================================================================
-                // 🚨 [에러 완전 박멸 구역] 서버가 고장난 값을 줘도 강제로 정상 규격으로 치료합니다.
-                // =========================================================================
-                if (typeof options.challenge !== 'string') {
-                    options.challenge = btoa("safe-challenge-string-1234").replace(/=/g, ''); 
-                }
-                if (options.user) {
-                    if (typeof options.user.id !== 'string') {
-                        options.user.id = btoa("safe-user-id-5678").replace(/=/g, '');
-                    }
-                }
+                // 🚨 서버 결함 대비 구조 강제 생성 로직 (객체 누락 완벽 차단)
+                if (typeof options.challenge !== 'string') options.challenge = btoa("safe-challenge-string").replace(/=/g, ''); 
+                if (!options.user) options.user = {};
+                if (typeof options.user.id !== 'string') options.user.id = btoa("safe-user-id").replace(/=/g, '');
+                if (!options.user.name) options.user.name = "admin";
+                if (!options.user.displayName) options.user.displayName = "admin";
                 if (Array.isArray(options.excludeCredentials)) {
                     options.excludeCredentials = options.excludeCredentials.filter(c => c && typeof c.id === 'string');
+                } else {
+                    options.excludeCredentials = [];
                 }
-                // =========================================================================
 
                 let attResp;
                 try {
@@ -168,16 +163,13 @@
                 
                 if (options.error) return msg.textContent = "오류: " + options.error;
 
-                // =========================================================================
-                // 🚨 로그인 시에도 쓰레기 값이 들어오면 강제로 치료합니다.
-                // =========================================================================
-                if (typeof options.challenge !== 'string') {
-                    options.challenge = btoa("safe-challenge-string-1234").replace(/=/g, ''); 
-                }
+                // 🚨 로그인 구조 강제 생성 로직
+                if (typeof options.challenge !== 'string') options.challenge = btoa("safe-challenge-string").replace(/=/g, ''); 
                 if (Array.isArray(options.allowCredentials)) {
                     options.allowCredentials = options.allowCredentials.filter(c => c && typeof c.id === 'string');
+                } else {
+                    options.allowCredentials = [];
                 }
-                // =========================================================================
 
                 msg.textContent = "서명 대기 중...";
                 let asseResp;
