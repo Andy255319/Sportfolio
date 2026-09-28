@@ -1,0 +1,128 @@
+import {
+    generateRegistrationOptions,
+    verifyRegistrationResponse,
+    generateAuthenticationOptions,
+    verifyAuthenticationResponse
+} from '@simplewebauthn/server';
+
+// [과제 증명용 임시 DB] Vercel 인메모리를 활용하여 공개키와 챌린지 상태를 저장합니다.
+let globalUser = {
+    id: 'admin-portfolio-user',
+    username: 'admin',
+    devices: [], // 여기에 기기의 '공개키'만 저장됨 (개인키는 기기 내부에 잔류)
+    currentChallenge: null
+};
+let sessionToken = null;
+
+export default async function handler(req, res) {
+    const { action } = req.query;
+    const rpName = '내 포트폴리오 비공개 영역';
+    const rpID = req.headers.host.split(':')[0]; // localhost 또는 vercel.app 도메인
+    const expectedOrigin = req.headers.origin || (rpID === 'localhost' ? 'http://localhost:3000' : `https://${rpID}`);
+
+    try {
+        // 1. 등록용 일회용 질문(Challenge) 발급
+        if (action === 'generate-reg') {
+            const options = await generateRegistrationOptions({
+                rpName, rpID,
+                userID: new Uint8Array(Buffer.from(globalUser.id)),
+                userName: globalUser.username,
+                attestationType: 'none',
+                excludeCredentials: globalUser.devices.map(dev => ({ id: dev.credentialID, type: 'public-key' })),
+            });
+            globalUser.currentChallenge = options.challenge; // 서버가 챌린지를 기억함 (T08-C19)
+            return res.status(200).json(options);
+        }
+
+        // 2. 등록 서명 검증 및 공개키 저장
+        if (action === 'verify-reg') {
+            const { response, deviceName } = req.body;
+            if (!globalUser.currentChallenge) return res.status(400).json({ error: '유효한 질문(Challenge)이 없습니다.' });
+
+            let verification = await verifyRegistrationResponse({
+                response,
+                expectedChallenge: globalUser.currentChallenge,
+                expectedOrigin,
+                expectedRPID: rpID,
+            });
+
+            if (verification.verified && verification.registrationInfo) {
+                const { credential } = verification.registrationInfo;
+                globalUser.devices.push({
+                    credentialID: credential.id,
+                    publicKey: credential.publicKey, // 서버에는 오직 '공개키'만 저장됨 (T08-C21)
+                    counter: credential.counter,
+                    name: deviceName || `기기 ${globalUser.devices.length + 1}`,
+                    registeredAt: new Date().toISOString()
+                });
+                globalUser.currentChallenge = null; // 챌린지 폐기 (재사용 방지)
+                return res.status(200).json({ success: true });
+            }
+            return res.status(400).json({ error: '서명 검증 실패' });
+        }
+
+        // 3. 로그인용 일회용 질문(Challenge) 발급
+        if (action === 'generate-auth') {
+            const options = await generateAuthenticationOptions({
+                rpID,
+                allowCredentials: globalUser.devices.map(dev => ({ id: dev.credentialID, type: 'public-key' })),
+            });
+            globalUser.currentChallenge = options.challenge;
+            return res.status(200).json(options);
+        }
+
+        // 4. 로그인 서명 검증 (T08-C31 재사용 공격 방어 포함)
+        if (action === 'verify-auth') {
+            const { response } = req.body;
+            // 이미 쓴 챌린지로 다시 요청하면 여기서 에러 반환 (T08-C31 막히는 지점 방어)
+            if (!globalUser.currentChallenge) return res.status(400).json({ error: '만료되었거나 이미 사용된 질문(Challenge)입니다.' });
+
+            const device = globalUser.devices.find(d => d.credentialID === response.id);
+            if (!device) return res.status(400).json({ error: '등록되지 않은 기기입니다.' });
+
+            let verification = await verifyAuthenticationResponse({
+                response,
+                expectedChallenge: globalUser.currentChallenge,
+                expectedOrigin,
+                expectedRPID: rpID,
+                credential: { id: device.credentialID, publicKey: device.publicKey, counter: device.counter }
+            });
+
+            if (verification.verified) {
+                device.counter = verification.authenticationInfo.newCounter;
+                globalUser.currentChallenge = null; // ★ 핵심: 서명 성공 즉시 챌린지 소진 (재사용 원천 차단)
+                sessionToken = 'secure-session-' + Date.now();
+                return res.status(200).json({ success: true, token: sessionToken });
+            }
+            return res.status(400).json({ error: '로그인 검증 실패' });
+        }
+
+        // 5. 비공개 데이터 요청 (토큰 검증) - T08-C16, C17 방어
+        if (action === 'get-private-data') {
+            const token = req.headers.authorization?.split('Bearer ')[1];
+            if (!token || token !== sessionToken) {
+                return res.status(403).json({ error: '403 Forbidden: 패스키 인증이 필요합니다.' });
+            }
+            // 인증 성공 시에만 비공개 자료 반환 (HTML 소스코드에는 절대 남지 않음)
+            return res.status(200).json({
+                privateItems: [
+                    { title: '준비 중인 프로젝트 메모', content: 'WebAuthn API를 활용한 B2B SaaS 기업용 비밀번호 없는 사내망 인증 시스템 설계 기획안.' },
+                    { title: '지원하려는 곳 목록', content: '통신 3사 핵심 인프라 기획 직무, 클라우드 아키텍트 직무.' },
+                    { title: '스스로 쓰는 회고', content: '보안과 편의성은 반비례한다는 편견을 패스키(Passkey) 기술을 직접 구현하며 깨부수었다.' }
+                ],
+                devices: globalUser.devices.map(d => ({ id: d.credentialID, name: d.name, date: d.registeredAt }))
+            });
+        }
+
+        // 6. 패스키 삭제
+        if (action === 'delete-key') {
+            const { credentialID } = req.body;
+            globalUser.devices = globalUser.devices.filter(d => d.credentialID !== credentialID);
+            return res.status(200).json({ success: true });
+        }
+
+        return res.status(404).json({ error: 'Not found' });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+}
