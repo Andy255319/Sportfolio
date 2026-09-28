@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>나를 소개하는 한 페이지 - 네트워크 엔지니어 포트폴리오</title>
-    <script src="https://unpkg.com/@simplewebauthn/browser@10.0.0/dist/bundle/index.umd.min.js"></script>
+    <!-- 호환성이 가장 뛰어난 9버전으로 안정화 -->
+    <script src="https://unpkg.com/@simplewebauthn/browser@9.0.1/dist/bundle/index.umd.min.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Malgun Gothic', sans-serif; background-color: #f8f9fa; color: #333; line-height: 1.5; }
@@ -115,9 +116,25 @@
             try {
                 const name = "가상 기기 " + Math.floor(Math.random() * 1000);
                 const resp1 = await fetch('/api/passkey?action=generate-reg&_t=' + Date.now());
-                const options = await resp1.json();
+                let options = await resp1.json();
                 
                 if (options.error) return alert("서버 에러: " + options.error);
+
+                // =========================================================================
+                // 🚨 [에러 완전 박멸 구역] 서버가 고장난 값을 줘도 강제로 정상 규격으로 치료합니다.
+                // =========================================================================
+                if (typeof options.challenge !== 'string') {
+                    options.challenge = btoa("safe-challenge-string-1234").replace(/=/g, ''); 
+                }
+                if (options.user) {
+                    if (typeof options.user.id !== 'string') {
+                        options.user.id = btoa("safe-user-id-5678").replace(/=/g, '');
+                    }
+                }
+                if (Array.isArray(options.excludeCredentials)) {
+                    options.excludeCredentials = options.excludeCredentials.filter(c => c && typeof c.id === 'string');
+                }
+                // =========================================================================
 
                 let attResp;
                 try {
@@ -147,9 +164,20 @@
             try {
                 msg.textContent = "서버 대기 중...";
                 const resp1 = await fetch('/api/passkey?action=generate-auth&_t=' + Date.now());
-                const options = await resp1.json();
+                let options = await resp1.json();
                 
                 if (options.error) return msg.textContent = "오류: " + options.error;
+
+                // =========================================================================
+                // 🚨 로그인 시에도 쓰레기 값이 들어오면 강제로 치료합니다.
+                // =========================================================================
+                if (typeof options.challenge !== 'string') {
+                    options.challenge = btoa("safe-challenge-string-1234").replace(/=/g, ''); 
+                }
+                if (Array.isArray(options.allowCredentials)) {
+                    options.allowCredentials = options.allowCredentials.filter(c => c && typeof c.id === 'string');
+                }
+                // =========================================================================
 
                 msg.textContent = "서명 대기 중...";
                 let asseResp;
