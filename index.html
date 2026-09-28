@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>나를 소개하는 한 페이지 - 네트워크 엔지니어 포트폴리오</title>
-    <!-- [수정됨] 패스키 버전 충돌 방지를 위해 v10으로 명시적 고정 -->
     <script src="https://unpkg.com/@simplewebauthn/browser@10.0.0/dist/bundle/index.umd.min.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -27,7 +26,6 @@
         .hidden-content { display: none; background-color: #eef5fc; border-left: 4px solid #0056b3; padding: 15px; margin-top: 10px; font-size: 13px; }
         .hidden-content.active { display: block; }
         
-        /* 비공개 영역 전용 스타일 */
         .private-card { background-color: #fff3f3; border: 2px dashed #dc3545; }
         .private-card h2 { color: #dc3545; border-bottom: 2px solid #dc3545; }
         .passkey-btn { width: auto; display: inline-block; padding: 8px 12px; margin: 5px; }
@@ -79,12 +77,10 @@
                     </div>
                 </div>
 
-                <!-- [과제 8] 패스키 비공개 영역 -->
                 <div class="card private-card">
                     <h2>🔒 나만의 비밀 공간 (비공개 영역)</h2>
-                    
                     <div id="locked-view">
-                        <p style="font-size:13px; color:#666;">이곳은 소유자의 '패스키(지문/Face ID)'로만 열리는 비공개 구역입니다.</p>
+                        <p style="font-size:13px; color:#666;">소유자의 '패스키'로만 열리는 비공개 구역입니다.</p>
                         <div style="text-align: center; margin-top: 15px;">
                             <button class="interactive-btn passkey-btn" onclick="loginPasskey()" style="background-color:#28a745;">🔓 패스키 로그인</button>
                             <button class="interactive-btn passkey-btn" onclick="registerPasskey()" style="background-color:#6c757d;">🔑 새 패스키 기기 등록</button>
@@ -96,7 +92,6 @@
                         <button class="interactive-btn passkey-btn" onclick="logoutPasskey()" style="background-color:#dc3545; float:right;">로그아웃</button>
                         <h3 style="color:#dc3545;">나만의 비공개 자료</h3>
                         <ul id="private-items"></ul>
-                        
                         <hr style="margin:15px 0; border:1px solid #ffcccc;">
                         <h3 style="color:#dc3545;">등록된 열쇠(패스키) 관리</h3>
                         <ul id="passkey-list"></ul>
@@ -107,35 +102,28 @@
     </div>
 
     <script>
-        const btn = document.getElementById('evidenceBtn');
-        const panel = document.getElementById('evidencePanel');
-        btn.addEventListener('click', () => {
+        document.getElementById('evidenceBtn').addEventListener('click', function() {
+            const panel = document.getElementById('evidencePanel');
             panel.classList.toggle('active');
-            btn.innerText = panel.classList.contains('active') ? '경험 증빙 자료 닫기 ▲' : '경험 증빙 자료 및 깨달음 펼치기 ▼';
+            this.innerText = panel.classList.contains('active') ? '경험 증빙 자료 닫기 ▲' : '경험 증빙 자료 및 깨달음 펼치기 ▼';
         });
 
-        // --- 패스키(WebAuthn) 핵심 로직 ---
         const { startRegistration, startAuthentication } = SimpleWebAuthnBrowser;
         let mySessionToken = '';
 
         async function registerPasskey() {
             try {
                 const name = "가상 기기 " + Math.floor(Math.random() * 1000);
-                
-                // ★ 주소 뒤에 난수를 붙여 캐시를 강제 파괴 (Cache Busting)
                 const resp1 = await fetch('/api/passkey?action=generate-reg&_t=' + Date.now());
                 const options = await resp1.json();
                 
-                // Vercel이 또 엉뚱한 데이터를 주면 브라우저가 뻗기 전에 경고창으로 띄움
-                if (options.error || !options.challenge) {
-                    return alert("서버 응답 오류 (캐시 문제): " + JSON.stringify(options));
-                }
+                if (options.error) return alert("서버 에러: " + options.error);
 
                 let attResp;
                 try {
                     attResp = await startRegistration({ optionsJSON: options });
                 } catch(err) {
-                    return alert("패스키 실행 거절됨: " + err.message);
+                    return alert("기기 거절: " + err.message);
                 }
 
                 const resp2 = await fetch('/api/passkey?action=verify-reg', {
@@ -146,34 +134,32 @@
                 const result = await resp2.json();
                 
                 if(result.success) {
-                    alert("패스키가 안전하게 등록되었습니다!");
+                    alert("패스키 등록 성공!");
+                    if(mySessionToken) loadPrivateData();
                 } else {
                     alert("등록 실패: " + result.error);
                 }
-            } catch (err) { alert("네트워크 에러: " + err.message); }
+            } catch (err) { alert("통신 에러: " + err.message); }
         }
 
         async function loginPasskey() {
             const msg = document.getElementById('auth-msg');
             try {
-                msg.textContent = "서버에서 질문을 가져오는 중...";
-                // ★ 캐시 강제 파괴
+                msg.textContent = "서버 대기 중...";
                 const resp1 = await fetch('/api/passkey?action=generate-auth&_t=' + Date.now());
                 const options = await resp1.json();
                 
-                if (options.error || !options.challenge) {
-                    return msg.textContent = "서버 응답 오류: " + JSON.stringify(options);
-                }
+                if (options.error) return msg.textContent = "오류: " + options.error;
 
-                msg.textContent = "패스키 서명을 기다리는 중...";
+                msg.textContent = "서명 대기 중...";
                 let asseResp;
                 try {
                     asseResp = await startAuthentication({ optionsJSON: options });
                 } catch(err) {
-                    return msg.textContent = "로그인 에러: " + err.message;
+                    return msg.textContent = "로그인 취소됨.";
                 }
 
-                msg.textContent = "서명 확인 중...";
+                msg.textContent = "검증 중...";
                 const resp2 = await fetch('/api/passkey?action=verify-auth', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
@@ -186,36 +172,27 @@
                     msg.textContent = "";
                     loadPrivateData();
                 } else {
-                    msg.textContent = "거절됨: " + (result.error || "알 수 없는 에러");
+                    msg.textContent = "실패: " + (result.error || "알 수 없는 에러");
                 }
-            } catch (err) { msg.textContent = "오류 발생: " + err.message; }
+            } catch (err) { msg.textContent = "통신 오류: " + err.message; }
         }
+
         async function loadPrivateData() {
             const resp = await fetch('/api/passkey?action=get-private-data', {
                 headers: { 'Authorization': 'Bearer ' + mySessionToken }
             });
+            if(resp.status === 403) return alert("접근 거절됨.");
             
-            if(resp.status === 403) {
-                alert("비공개 자료 접근이 거절되었습니다. 패스키 로그인이 필요합니다.");
-                return;
-            }
             const data = await resp.json();
-            
             document.getElementById('locked-view').style.display = 'none';
             document.getElementById('unlocked-view').style.display = 'block';
 
             const ul = document.getElementById('private-items');
-            ul.innerHTML = '';
-            data.privateItems.forEach(item => {
-                ul.innerHTML += `<li><strong>${item.title}:</strong> ${item.content}</li>`;
-            });
+            ul.innerHTML = data.privateItems.map(item => `<li><strong>${item.title}:</strong> ${item.content}</li>`).join('');
 
             const kl = document.getElementById('passkey-list');
-            kl.innerHTML = '';
-            data.devices.forEach(dev => {
-                kl.innerHTML += `<li style="margin-bottom:5px;">${dev.name} (등록일: ${new Date(dev.date).toLocaleDateString()}) 
-                    <button class="interactive-btn passkey-btn" onclick="deleteKey('${dev.id}')" style="background:#dc3545; padding:2px 8px; font-size:11px;">삭제</button></li>`;
-            });
+            kl.innerHTML = data.devices.map(dev => `<li style="margin-bottom:5px;">${dev.name} 
+                <button class="interactive-btn passkey-btn" onclick="deleteKey('${dev.id}')" style="background:#dc3545; padding:2px 8px; font-size:11px;">삭제</button></li>`).join('');
         }
 
         function logoutPasskey() {
@@ -225,7 +202,7 @@
         }
 
         async function deleteKey(id) {
-            if(!confirm("이 패스키 기기를 삭제하시겠습니까?")) return;
+            if(!confirm("삭제하시겠습니까?")) return;
             await fetch('/api/passkey?action=delete-key', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
